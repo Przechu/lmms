@@ -28,6 +28,12 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#include "lmmsconfig.h"
+
+#ifdef LMMS_BUILD_HAIKU
+#	include <OS.h>
+#endif
+
 #include "AudioEngine.h"
 #include "Hardware.h"
 #include "ThreadableJob.h"
@@ -96,7 +102,21 @@ void AudioEngineWorkerThread::JobQueue::run()
 
 void AudioEngineWorkerThread::JobQueue::wait()
 {
+#ifdef LMMS_BUILD_HAIKU
+	// The audio thread has a real-time priority on Haiku. If it only spins
+	// here, a worker (or a process the worker is waiting for) that is ready
+	// but has not been given a CPU yet may never get one, and the audio thread
+	// then spins for ever. So spin briefly, as a job usually ends within
+	// microseconds, and sleep after that.
+	constexpr auto spinsBeforeSleeping = 2000;
+	for (auto spins = 0; m_itemsDone < m_writeIndex; ++spins)
+	{
+		if (spins < spinsBeforeSleeping) { busyWaitHint(); }
+		else { snooze(20); }
+	}
+#else
 	while (m_itemsDone < m_writeIndex) { busyWaitHint(); }
+#endif
 }
 
 
@@ -159,6 +179,13 @@ void AudioEngineWorkerThread::startAndWaitForJobs()
 void AudioEngineWorkerThread::run()
 {
 	disableDenormals();
+
+#ifdef LMMS_BUILD_HAIKU
+	// QThread::setPriority() does nothing on Haiku, which would leave the
+	// workers at the normal priority while the audio thread that waits for
+	// them runs at a real-time one. Give them the audio thread's priority.
+	set_thread_priority(find_thread(nullptr), B_URGENT_PRIORITY);
+#endif
 
 	QMutex m;
 	while( m_quit == false )

@@ -38,11 +38,26 @@ The change is one new MIDI client, `MidiHaiku`, built on Haiku's MIDI Kit
 | `src/gui/modals/SetupDialog.cpp` | Offer "Haiku MIDI" in the MIDI settings. |
 | `src/core/CMakeLists.txt` | Build `MidiHaiku.cpp`. |
 | `src/CMakeLists.txt` | Link `libbe` and `libmidi2` on Haiku. |
+| `src/core/AudioEngineWorkerThread.cpp` | Not MIDI: stop the audio thread from starving its workers (see below). |
 | `plugins/ZynAddSubFx/CMakeLists.txt` | Not MIDI: build ZynAddSubFx's GUI on Haiku (it took the Windows branch) and link `libbsd`. Needs the `fltk` package. |
 
 All of it is guarded by `LMMS_BUILD_HAIKU`, so no other platform is affected.
 The submodules `src/3rdparty/hiir` and `plugins/MidiImport/portsmf` are needed
 by this LMMS version; the HaikuPorts recipe has to provide them.
+
+## Audio thread and its workers
+
+On Haiku the audio thread runs at a real-time priority, set by the media
+system, while `QThread::setPriority()` does nothing, so the render workers stay
+at the normal priority. At the end of every period the audio thread used to spin
+until all jobs were done. A worker that was ready to run but had not been given a
+CPU could then wait for ever behind the spinning audio thread, and LMMS stopped
+playing with the audio thread at full load. This showed up when the ZynAddSubFx
+GUI was opened, because the plugin then waits for another process, but it can
+happen with any plugin.
+
+The wait loop now spins briefly and then sleeps in short steps, and the workers
+get the audio thread's priority.
 
 ## Building
 
