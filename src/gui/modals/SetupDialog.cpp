@@ -59,6 +59,7 @@
 #include "MidiAlsaRaw.h"
 #include "MidiAlsaSeq.h"
 #include "MidiApple.h"
+#include "MidiHaiku.h"
 #include "MidiDummy.h"
 #include "MidiJack.h"
 #include "MidiSndio.h"
@@ -700,6 +701,11 @@ SetupDialog::SetupDialog(ConfigTab tab_to_open) :
 #ifdef LMMS_HAVE_WINMM
 	m_midiIfaceSetupWidgets[MidiWinMM::name()] =
 			MidiSetupWidget::create<MidiWinMM>(ms_w);
+#endif
+
+#ifdef LMMS_BUILD_HAIKU
+	m_midiIfaceSetupWidgets[MidiHaiku::name()] =
+			MidiSetupWidget::create<MidiHaiku>(ms_w);
 #endif
 
 #ifdef LMMS_BUILD_APPLE

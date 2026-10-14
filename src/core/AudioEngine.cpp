@@ -53,6 +53,7 @@
 #include "MidiSndio.h"
 #include "MidiWinMM.h"
 #include "MidiApple.h"
+#include "MidiHaiku.h"
 #include "MidiDummy.h"
 
 #include "BufferManager.h"
@@ -662,6 +663,13 @@ bool AudioEngine::isMidiDevNameValid(QString name)
 	}
 #endif
 
+#ifdef LMMS_BUILD_HAIKU
+	if (name == MidiHaiku::name())
+	{
+		return true;
+	}
+#endif
+
 #ifdef LMMS_BUILD_APPLE
     if (name == MidiApple::name())
     {
@@ -804,6 +812,19 @@ MidiClient * AudioEngine::tryMidiClients()
 	{
 		client_name = "";
 	}
+
+#ifdef LMMS_BUILD_HAIKU
+	if (client_name == MidiHaiku::name() || client_name == "")
+	{
+		auto mhaiku = new MidiHaiku;
+		if (mhaiku->isRunning())
+		{
+			m_midiClientName = MidiHaiku::name();
+			return mhaiku;
+		}
+		delete mhaiku;
+	}
+#endif
 
 #ifdef LMMS_HAVE_ALSA
 	if( client_name == MidiAlsaSeq::name() || client_name == "" )

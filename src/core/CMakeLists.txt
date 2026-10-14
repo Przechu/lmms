@@ -126,6 +126,7 @@ set(LMMS_SRCS
 	core/midi/MidiJack.cpp
 	core/midi/MidiSndio.cpp
 	core/midi/MidiApple.cpp
+	core/midi/MidiHaiku.cpp
 	core/midi/MidiPort.cpp
 	core/midi/MidiWinMM.cpp
 
