@@ -161,6 +161,23 @@ private:
 
 
 
+#ifdef LMMS_BUILD_HAIKU
+// With FLTK on Haiku, a window that is only repainted in part, as it is when
+// a tab is switched or a meter moves, is drawn with tearing and left-over
+// pieces of what was there before. A repaint of the whole window does not have
+// that. So every window that has something to repaint is repainted whole.
+static void repaintDamagedWindowsInFull()
+{
+	for (Fl_Window* window = Fl::first_window(); window; window = Fl::next_window(window))
+	{
+		if (window->damage() && window->damage() != FL_DAMAGE_ALL) { window->redraw(); }
+	}
+}
+#endif
+
+
+
+
 void RemoteZynAddSubFx::guiLoop()
 {
 	int exitProgram = 0;
@@ -171,6 +188,10 @@ void RemoteZynAddSubFx::guiLoop()
 		if( ui )
 		{
 			Fl::wait( m_guiSleepTime / 1000.0 );
+#ifdef LMMS_BUILD_HAIKU
+			// what the events and timeouts have damaged is drawn by the next wait
+			repaintDamagedWindowsInFull();
+#endif
 		}
 		else
 		{

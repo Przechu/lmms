@@ -40,6 +40,7 @@ The change is one new MIDI client, `MidiHaiku`, built on Haiku's MIDI Kit
 | `src/CMakeLists.txt` | Link `libbe` and `libmidi2` on Haiku. |
 | `src/core/AudioEngineWorkerThread.cpp` | Not MIDI: stop the audio thread from starving its workers (see below). |
 | `src/gui/MainApplication.cpp`, `include/MainApplication.h` | Not MIDI: make dragging with the mouse and drag and drop work (see below). |
+| `plugins/ZynAddSubFx/RemoteZynAddSubFx.cpp` | Not MIDI: repaint the ZynAddSubFx GUI's windows whole, which stops the tearing (see below). |
 | `plugins/ZynAddSubFx/CMakeLists.txt` | Not MIDI: build ZynAddSubFx's GUI on Haiku (it took the Windows branch) and link `libbsd`. Needs the `fltk` package. |
 
 All of it is guarded by `LMMS_BUILD_HAIKU`, so no other platform is affected.
@@ -80,6 +81,16 @@ dragging a preset, a sample or a clip into the Song Editor did nothing.
 `MainApplication::notify()` now treats a move that the widget has not handled as
 accepted when the same widget accepted the drag on entering. LMMS's widgets all
 decide on entering, so what may be dropped where is unchanged.
+
+## ZynAddSubFx GUI
+
+FLTK on Haiku draws a window that is only repainted in part, as it is when a tab
+is switched or a meter moves, with tearing and left-over pieces of the old picture.
+After each wait of the GUI's loop, every window that has something to repaint is
+now repainted whole, which does not show that. Tab switching in the main window is
+clean with it. The bank window that ZynAddSubFx can open (instrument names in a
+grid) is not made clean by it, and is empty unless a bank directory is set; that
+window is as ZynAddSubFx has it.
 
 ## Building
 
