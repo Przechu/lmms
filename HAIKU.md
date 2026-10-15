@@ -39,7 +39,7 @@ The change is one new MIDI client, `MidiHaiku`, built on Haiku's MIDI Kit
 | `src/core/CMakeLists.txt` | Build `MidiHaiku.cpp`. |
 | `src/CMakeLists.txt` | Link `libbe` and `libmidi2` on Haiku. |
 | `src/core/AudioEngineWorkerThread.cpp` | Not MIDI: stop the audio thread from starving its workers (see below). |
-| `src/gui/MainApplication.cpp`, `include/MainApplication.h` | Not MIDI: make drag and drop work (see below). |
+| `src/gui/MainApplication.cpp`, `include/MainApplication.h` | Not MIDI: make dragging with the mouse and drag and drop work (see below). |
 | `plugins/ZynAddSubFx/CMakeLists.txt` | Not MIDI: build ZynAddSubFx's GUI on Haiku (it took the Windows branch) and link `libbsd`. Needs the `fltk` package. |
 
 All of it is guarded by `LMMS_BUILD_HAIKU`, so no other platform is affected.
@@ -59,6 +59,15 @@ happen with any plugin.
 
 The wait loop now spins briefly and then sleeps in short steps, and the workers
 get the audio thread's priority.
+
+## Dragging with the mouse
+
+Qt on Haiku sends the moves of the mouse without the buttons that are held down,
+although it knows that one is down. Qt gives such moves only to widgets that track
+the mouse, so the windows of LMMS could not be dragged by their title bars, and
+other widgets that rely on the buttons in a move may have been affected too.
+`MainApplication::notify()` now gives those moves the buttons before the widgets
+see them. The cause is in Qt's Haiku platform plugin; this works around it.
 
 ## Drag and drop
 

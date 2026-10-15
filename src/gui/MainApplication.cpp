@@ -26,6 +26,7 @@
 #include <QDebug>
 #include <QDragMoveEvent>
 #include <QFileOpenEvent>
+#include <QMouseEvent>
 
 #include "Engine.h"
 #include "GuiApplication.h"
@@ -59,16 +60,38 @@ MainApplication::MainApplication(int& argc, char** argv) :
 }
 
 #ifdef LMMS_BUILD_HAIKU
-// Qt's drag and drop within an application, which is what Haiku has, takes a
-// widget's acceptance of a drag when it enters as the answer for the moves that
-// follow it, unless the widget says otherwise. A move that comes after the
-// cursor has stopped, as the last one before the button is released does, was
-// not taken that way here, which made Qt cancel the drop. Widgets of LMMS decide
-// when the drag enters, so a move that nobody has handled stays accepted.
 bool MainApplication::notify(QObject* receiver, QEvent* event)
 {
 	const auto type = event->type();
+
+	// Qt on Haiku sends the moves of the mouse without the buttons that are
+	// held down, although it knows that one is. Qt hands such moves only to the
+	// widgets that track the mouse, so the windows of LMMS could not be dragged by
+	// their title bars, and other widgets may be affected. Moves are given the
+	// buttons here, where the window gets them, before the widgets are given them.
+	if (type == QEvent::MouseMove && !receiver->isWidgetType())
+	{
+		const auto move = static_cast<QMouseEvent*>(event);
+		if (move->buttons() == Qt::NoButton && QGuiApplication::mouseButtons() != Qt::NoButton)
+		{
+			QMouseEvent fixed(QEvent::MouseMove, move->localPos(), move->windowPos(), move->screenPos(),
+				Qt::NoButton, QGuiApplication::mouseButtons(), move->modifiers(), move->source());
+			fixed.setTimestamp(move->timestamp());
+			const auto result = QApplication::notify(receiver, &fixed);
+			event->setAccepted(fixed.isAccepted());
+			return result;
+		}
+	}
+
 	const auto result = QApplication::notify(receiver, event);
+
+	// Qt's drag and drop within an application, which is what Haiku has, takes a
+	// widget's acceptance of a drag when it enters as the answer for the moves
+	// that follow it, unless the widget says otherwise. A move that comes after
+	// the cursor has stopped, as the last one before the button is released does,
+	// was not taken that way here, which made Qt cancel the drop. Widgets of LMMS
+	// decide when the drag enters, so a move that nobody has handled stays
+	// accepted.
 
 	// the window gets each drag event too, and passes it on to a widget
 	if (!receiver->isWidgetType()) { return result; }
