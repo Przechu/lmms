@@ -26,15 +26,18 @@ The change is one new MIDI client, `MidiHaiku`, built on Haiku's MIDI Kit
   appearing in the list, and pitch bend. Not yet tested:
   controller and program-change traffic, hardware keyboards, reconnecting after a
   device goes away, and 32-bit Haiku.
-- Haiku MIDI is the default client on Haiku, so nothing needs to be configured.
+- The endpoints carry LMMS's icon, which Haiku's MIDI patchbay shows next to their names.
+- Haiku MIDI is the default client on Haiku, so nothing needs to be configured. A setting
+  saved by an earlier build, when "Dummy (no MIDI support)" was the only choice on Haiku, is
+  changed to Haiku MIDI once, the first time this build runs; a "Dummy" chosen after that is kept.
 
 ## The patch
 
 | File | Change |
 | --- | --- |
 | `include/MidiHaiku.h` | New. The client's interface; it does not include any Haiku header. |
-| `src/core/midi/MidiHaiku.cpp` | New. The client. |
-| `src/core/AudioEngine.cpp` | Try the Haiku client first on Haiku; accept its name in the settings. |
+| `src/core/midi/MidiHaiku.cpp` | New. The client, and LMMS's icon on its endpoints. |
+| `src/core/AudioEngine.cpp` | Try the Haiku client first on Haiku; accept its name in the settings; replace a saved "Dummy" once. |
 | `src/gui/modals/SetupDialog.cpp` | Offer "Haiku MIDI" in the MIDI settings. |
 | `src/core/CMakeLists.txt` | Build `MidiHaiku.cpp`. |
 | `src/CMakeLists.txt` | Link `libbe` and `libmidi2` on Haiku. |
@@ -88,9 +91,9 @@ FLTK on Haiku draws a window that is only repainted in part, as it is when a tab
 is switched or a meter moves, with tearing and left-over pieces of the old picture.
 After each wait of the GUI's loop, every window that has something to repaint is
 now repainted whole, which does not show that. Tab switching in the main window is
-clean with it. The bank window that ZynAddSubFx can open (instrument names in a
-grid) is not made clean by it, and is empty unless a bank directory is set; that
-window is as ZynAddSubFx has it.
+clean with it. The bank window (instrument names in a grid) had its slots hidden: an `Fl_Pack` with a
+box draws the box over its children on Haiku, and the slots are in packs with a flat box.
+The packs' boxes are taken off as each window is shown, which looks the same.
 
 ## Building
 

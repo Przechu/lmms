@@ -27,12 +27,16 @@
 #include <algorithm>
 #include <atomic>
 
+#include <QByteArray>
 #include <QMap>
 #include <QMetaObject>
 #include <QMutex>
 #include <QMutexLocker>
 #include <QVector>
 
+#include <AppFileInfo.h>
+#include <Application.h>
+#include <File.h>
 #include <Looper.h>
 #include <Message.h>
 #include <Messenger.h>
@@ -40,6 +44,8 @@
 #include <MidiProducer.h>
 #include <MidiRoster.h>
 #include <OS.h>
+#include <Resources.h>
+#include <Roster.h>
 
 #include "MidiPort.h"
 
@@ -51,6 +57,40 @@ namespace
 {
 
 constexpr int kControllerAllNotesOff = 123;
+
+//! Puts LMMS's own icon on an endpoint, as Haiku's MIDI patchbay shows it next to the endpoint's name.
+void setEndpointIcon(BMidiEndpoint* endpoint)
+{
+	// the icon is read once; the endpoints are made on more than one thread
+	static QMutex mutex;
+	static QByteArray icon;
+	static bool loaded = false;
+
+	QMutexLocker locker(&mutex);
+	if (!loaded)
+	{
+		loaded = true;
+		app_info info;
+		if (be_app != nullptr && be_app->GetAppInfo(&info) == B_OK)
+		{
+			BFile file(&info.ref, B_READ_ONLY);
+			BResources resources;
+			size_t size = 0;
+			if (resources.SetTo(&file) == B_OK)
+			{
+				const void* data = resources.LoadResource(B_VECTOR_ICON_TYPE, "BEOS:ICON", &size);
+				if (data != nullptr && size > 0) { icon = QByteArray(static_cast<const char*>(data), static_cast<int>(size)); }
+			}
+		}
+	}
+	if (icon.isEmpty()) { return; }
+
+	BMessage properties;
+	if (endpoint->GetProperties(&properties) != B_OK) { return; }
+	properties.RemoveName("icon");
+	properties.AddData("icon", B_VECTOR_ICON_TYPE, icon.constData(), icon.size());
+	endpoint->SetProperties(&properties);
+}
 
 //! Receives the events of the endpoints below, on their own threads.
 class EventSink
@@ -523,6 +563,7 @@ void MidiHaiku::subscribeReadablePort(MidiPort* port, const QString& dest, bool 
 	}
 	if (created != nullptr)
 	{
+		setEndpointIcon(created);
 		if (created->Register() != B_OK)
 		{
 			qWarning("MidiHaiku: could not register an endpoint for \"%s\"", dest.toUtf8().constData());
@@ -564,6 +605,7 @@ void MidiHaiku::subscribeWritablePort(MidiPort* port, const QString& dest, bool 
 	}
 	if (created != nullptr)
 	{
+		setEndpointIcon(created);
 		if (created->Register() != B_OK)
 		{
 			qWarning("MidiHaiku: could not register an endpoint for \"%s\"", dest.toUtf8().constData());
