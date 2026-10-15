@@ -814,6 +814,17 @@ MidiClient * AudioEngine::tryMidiClients()
 	}
 
 #ifdef LMMS_BUILD_HAIKU
+	// Before there was a Haiku client, "Dummy" was the only choice there, and the settings
+	// dialog saved it. Haiku MIDI replaces it once for such a setting, so that updating LMMS
+	// gets the MIDI ports without a visit to the settings. A "Dummy" chosen later is kept.
+	ConfigManager* config = ConfigManager::inst();
+	if (client_name == MidiDummy::name() && config->value("audioengine", "haikumidi").isEmpty())
+	{
+		client_name = MidiHaiku::name();
+		config->setValue("audioengine", "mididev", client_name);
+	}
+	config->setValue("audioengine", "haikumidi", "1");
+
 	if (client_name == MidiHaiku::name() || client_name == "")
 	{
 		auto mhaiku = new MidiHaiku;
