@@ -39,6 +39,7 @@ The change is one new MIDI client, `MidiHaiku`, built on Haiku's MIDI Kit
 | `src/core/CMakeLists.txt` | Build `MidiHaiku.cpp`. |
 | `src/CMakeLists.txt` | Link `libbe` and `libmidi2` on Haiku. |
 | `src/core/AudioEngineWorkerThread.cpp` | Not MIDI: stop the audio thread from starving its workers (see below). |
+| `src/gui/MainApplication.cpp`, `include/MainApplication.h` | Not MIDI: make drag and drop work (see below). |
 | `plugins/ZynAddSubFx/CMakeLists.txt` | Not MIDI: build ZynAddSubFx's GUI on Haiku (it took the Windows branch) and link `libbsd`. Needs the `fltk` package. |
 
 All of it is guarded by `LMMS_BUILD_HAIKU`, so no other platform is affected.
@@ -58,6 +59,18 @@ happen with any plugin.
 
 The wait loop now spins briefly and then sleeps in short steps, and the workers
 get the audio thread's priority.
+
+## Drag and drop
+
+Qt on Haiku has only its basic drag and drop within one application. It takes a
+widget's acceptance of a drag when the drag enters as the answer for the moves
+that follow, but the last move before the button was released, which repeats
+the cursor's position, came back as not accepted. Qt then cancelled the drop, so
+dragging a preset, a sample or a clip into the Song Editor did nothing.
+
+`MainApplication::notify()` now treats a move that the widget has not handled as
+accepted when the same widget accepted the drag on entering. LMMS's widgets all
+decide on entering, so what may be dropped where is unchanged.
 
 ## Building
 

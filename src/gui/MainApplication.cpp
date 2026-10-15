@@ -24,6 +24,7 @@
 #include "MainApplication.h"
 
 #include <QDebug>
+#include <QDragMoveEvent>
 #include <QFileOpenEvent>
 
 #include "Engine.h"
@@ -56,6 +57,44 @@ MainApplication::MainApplication(int& argc, char** argv) :
 	installNativeEventFilter(this);
 #endif
 }
+
+#ifdef LMMS_BUILD_HAIKU
+// Qt's drag and drop within an application, which is what Haiku has, takes a
+// widget's acceptance of a drag when it enters as the answer for the moves that
+// follow it, unless the widget says otherwise. A move that comes after the
+// cursor has stopped, as the last one before the button is released does, was
+// not taken that way here, which made Qt cancel the drop. Widgets of LMMS decide
+// when the drag enters, so a move that nobody has handled stays accepted.
+bool MainApplication::notify(QObject* receiver, QEvent* event)
+{
+	const auto type = event->type();
+	const auto result = QApplication::notify(receiver, event);
+
+	// the window gets each drag event too, and passes it on to a widget
+	if (!receiver->isWidgetType()) { return result; }
+
+	switch (type)
+	{
+	case QEvent::DragEnter:
+		m_dragTarget = event->isAccepted() ? receiver : nullptr;
+		break;
+	case QEvent::DragMove:
+		if (!event->isAccepted() && receiver == m_dragTarget)
+		{
+			static_cast<QDragMoveEvent*>(event)->acceptProposedAction();
+		}
+		break;
+	case QEvent::DragLeave:
+	case QEvent::Drop:
+		m_dragTarget = nullptr;
+		break;
+	default:
+		break;
+	}
+
+	return result;
+}
+#endif
 
 bool MainApplication::event(QEvent* event)
 {

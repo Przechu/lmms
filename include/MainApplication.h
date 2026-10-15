@@ -28,6 +28,7 @@
 #include "lmmsconfig.h"
 
 #include <QApplication>
+#include <QPointer>
 
 #ifdef LMMS_BUILD_WIN32
 #include <windows.h>
@@ -48,6 +49,9 @@ class MainApplication : public QApplication
 public:
 	MainApplication(int& argc, char** argv);
 	bool event(QEvent* event) override;
+#ifdef LMMS_BUILD_HAIKU
+	bool notify(QObject* receiver, QEvent* event) override;
+#endif
 #ifdef LMMS_BUILD_WIN32
 #if (QT_VERSION < QT_VERSION_CHECK(6,0,0))
 	using FilterResult = long;
@@ -63,6 +67,10 @@ public:
 	}
 private:
 	QString m_queuedFile;
+#ifdef LMMS_BUILD_HAIKU
+	//! the widget that accepted the drag it is being dragged over
+	QPointer<QObject> m_dragTarget;
+#endif
 };
 
 
