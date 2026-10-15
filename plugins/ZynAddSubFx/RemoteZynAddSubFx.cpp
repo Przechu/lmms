@@ -40,6 +40,12 @@
 #include <Nio/Nio.h>
 #include <UI/MasterUI.h>
 
+#ifdef LMMS_BUILD_HAIKU
+#include <FL/Fl_Pack.H>
+#include <iterator>
+#include <set>
+#endif
+
 using namespace lmms;
 
 class RemoteZynAddSubFx : public RemotePluginClient, public LocalZynAddSubFx
@@ -173,6 +179,42 @@ static void repaintDamagedWindowsInFull()
 		if (window->damage() && window->damage() != FL_DAMAGE_ALL) { window->redraw(); }
 	}
 }
+
+
+// An Fl_Pack with a box draws the box over its children on Haiku, so what is in
+// it is not seen at all: the instrument slots of the bank window are in packs
+// with a flat box. A pack's box is taken off, which draws the same, as the
+// window under it has the pack's colour.
+static void clearPackBoxes(Fl_Group* group)
+{
+	for (int i = 0; i < group->children(); ++i)
+	{
+		Fl_Widget* child = group->child(i);
+		if (auto pack = dynamic_cast<Fl_Pack*>(child))
+		{
+			if (pack->box() == FL_FLAT_BOX) { pack->box(FL_NO_BOX); }
+		}
+		if (Fl_Group* inner = child->as_group()) { clearPackBoxes(inner); }
+	}
+}
+
+
+// Done for each window as it is shown, as the windows of the interface are made
+// at start and shown later.
+static void clearPackBoxesOfNewWindows()
+{
+	static std::set<Fl_Window*> done;
+	std::set<Fl_Window*> shown;
+	for (Fl_Window* window = Fl::first_window(); window; window = Fl::next_window(window))
+	{
+		shown.insert(window);
+		if (done.insert(window).second) { clearPackBoxes(window); }
+	}
+	for (auto it = done.begin(); it != done.end();)
+	{
+		it = shown.count(*it) ? std::next(it) : done.erase(it);
+	}
+}
 #endif
 
 
@@ -190,6 +232,7 @@ void RemoteZynAddSubFx::guiLoop()
 			Fl::wait( m_guiSleepTime / 1000.0 );
 #ifdef LMMS_BUILD_HAIKU
 			// what the events and timeouts have damaged is drawn by the next wait
+			clearPackBoxesOfNewWindows();
 			repaintDamagedWindowsInFull();
 #endif
 		}
