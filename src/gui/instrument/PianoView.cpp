@@ -165,6 +165,50 @@ static int getKeyOffsetFromKeyEvent( QKeyEvent * _ke )
 	}
 #endif // LMMS_BUILD_WIN32
 
+#ifdef __HAIKU__
+	// Quick fix: Map by Qt key code
+	switch( _ke->key() )
+	{
+		case Qt::Key_Z: return 0;  // C
+		case Qt::Key_S: return 1;  // C#
+		case Qt::Key_X: return 2;  // D
+		case Qt::Key_D: return 3;  // D#
+		case Qt::Key_C: return 4;  // E
+		case Qt::Key_V: return 5;  // F
+		case Qt::Key_G: return 6;  // F#
+		case Qt::Key_B: return 7;  // G
+		case Qt::Key_H: return 8;  // G#
+		case Qt::Key_N: return 9;  // A
+		case Qt::Key_J: return 10; // A#
+		case Qt::Key_M: return 11; // B
+		case Qt::Key_Comma: return 12;
+		case Qt::Key_L: return 13;
+		case Qt::Key_Period: return 14;
+		case Qt::Key_Semicolon: return 15;
+		case Qt::Key_Slash: return 16;
+		case Qt::Key_Q: return 12;
+		case Qt::Key_2: return 13;
+		case Qt::Key_W: return 14;
+		case Qt::Key_3: return 15;
+		case Qt::Key_E: return 16;
+		case Qt::Key_R: return 17;
+		case Qt::Key_5: return 18;
+		case Qt::Key_T: return 19;
+		case Qt::Key_6: return 20;
+		case Qt::Key_Y: return 21;
+		case Qt::Key_7: return 22;
+		case Qt::Key_U: return 23;
+		case Qt::Key_I: return 24;
+		case Qt::Key_9: return 25;
+		case Qt::Key_O: return 26;
+		case Qt::Key_0: return 27;
+		case Qt::Key_P: return 28;
+		case Qt::Key_BracketLeft: return 29;
+		case Qt::Key_Equal: return 30;
+		case Qt::Key_BracketRight: return 31;
+	}
+#endif // __HAIKU__
+	
 // TODO: Simplify by moving remaining platforms into else block or split into dedicated headers
 #if defined(LMMS_BUILD_LINUX) || defined(LMMS_BUILD_OPENBSD) || defined(LMMS_BUILD_FREEBSD) || defined(LMMS_BUILD_CYGWIN)
 	switch( k )
