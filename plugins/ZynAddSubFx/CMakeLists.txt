@@ -194,7 +194,7 @@ target_link_libraries(RemoteZynAddSubFx ${FLTK_FILTERED_LDFLAGS})
 
 if(LMMS_BUILD_HAIKU)
 	# warn(), warnx() and errx() are in libbsd
-	target_link_libraries(RemoteZynAddSubFx bsd)
+	target_link_libraries(RemoteZynAddSubFx bsd network)
 endif()
 
 if(LMMS_HAVE_LIBRT)
